@@ -12,6 +12,7 @@ let translate = require('counterpart');
 let FontAwesome = require('react-fontawesome');
 var firebase = require('firebase');
 var currentUser;
+
 var messRef;
 
 class Chat extends Component {
@@ -52,12 +53,17 @@ class Chat extends Component {
   }
 
   componentWillMount() {
+  //   currentUser = firebase.auth().currentUser;
+  // }
+  //   componentWillReceiveProps(nextProps){
+      
     var component = this;
-
+    currentUser = firebase.auth().currentUser;
+    // if(component.props.currentChatUserId !== this.state.chat_target_uid){
     component.setState({chat_target_uname: component.props.currentChatUserName});
     component.setState({chat_target_uid: component.props.currentChatUserId});
     component.setState({messages: []})
-    currentUser = firebase.auth().currentUser;
+    
     var roomid = currentUser.uid + component.props.currentChatUserId;
     firebase.database().ref().child('reference').child(roomid)
       .once('value').then(function(snapshot){
@@ -102,8 +108,8 @@ class Chat extends Component {
             }             
           })
         }
-      }
-    );
+      });
+    // }
   }
 
   loadHistory(timestamp, autoScroll){
@@ -227,7 +233,8 @@ class Chat extends Component {
         </div>
         <ChatSetting targetChatUserName={this.state.chat_target_uname}
           currentRoomId={this.state.current_room_id}
-          targetChatUserId={this.state.chat_target_uid}/>
+          targetChatUserId={this.state.chat_target_uid}
+          currentUserId={currentUser.uid}/>
       </div>
     )
   }
