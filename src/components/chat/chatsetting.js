@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Dropdown } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
+import $ from 'jquery';
 
 import '../../assets/styles/common/chatsetting.css';
 
@@ -9,23 +10,20 @@ import * as constant from '../constants';
 let FontAwesome = require('react-fontawesome');
 let translate = require('counterpart');
 var firebase = require('firebase');
+var Peer = require('peerjs');
+var openStream = require('../../lib/helper/open_stream');
+var playVideo = require('../../lib/helper/play_video');
+var videoCall = require('../../lib/helper/video_call');
+var p;
 var imageRef;
 var fileRef;
 var requestRef;
 var requestId;
 var cancelRequestRef;
-
-var RTCPeerConnection = window.webkitRTCPeerConnection;
-var video_call = require('../../lib/helper/video_call');
-navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-var yourId = Math.floor(Math.random()*1000000000);
-var constraints = { audio: false, video: true };
-var video = document.querySelector("video");
-var servers = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]};
-var pc = new RTCPeerConnection(servers);
-
-
-
+var streamRef;
+var callSide;
+var answerSide;
+var streamRecored;
 class ChatSetting extends Component {
   constructor(props) {
     super(props);
@@ -40,17 +38,35 @@ class ChatSetting extends Component {
     }
   }
   componentDidMount(){
+    p = Peer(this.state.current_user_id,{key: '1xeeuumlu40a4i'});
+    console.log(p);
+    p.on('call', function(called) {
+      openStream(stream =>{
+        called.answer(stream);
+        answerSide = called;
+        streamRecored = stream;
+        called.on('stream',remoteStream =>{
+              console.log(remoteStream);
+              playVideo(remoteStream,'localStream');
+        })
+        called.on('close', function(){
+          stream.getVideoTracks().forEach(function (track) {
+            track.stop();
+          });
+          stream.getAudioTracks().forEach(function (track) {
+            track.stop();
+          });
+          let video = $('#localStream');
+          video.removeAttr("src");
+        })
+      })
+    });
   }
 
-  sendMessage(roomId,senderId, data) {
-    let database = firebase.database().ref().child('rooms').child(roomId).child('video_call').child('streaming');
-    var msg = database.push({ sender: senderId, message: data });
-    console.log('12332');
-    // msg.remove();
-  }
   componentWillReceiveProps(nextProps) {
     var component = this;
     if(component.props.currentRoomId !== this.state.current_room_id && component.props.currentRoomId){
+      
       var imagesList = [];
       var filesList = [];
       component.setState({
@@ -75,20 +91,51 @@ class ChatSetting extends Component {
       if ( typeof cancelRequestRef !== 'undefined' && cancelRequestRef){
         requestRef.off();
       }
+      if ( typeof streamRef !== 'undefined' && streamRef){
+        streamRef.off();
+      }
       // pc.onicecandidate = (event => event.candidate?component.sendMessage(roomId,yourId, JSON.stringify({'ice': event.candidate})):console.log("Sent All Ice") );
-      
+      streamRef = firebase.database().ref().child('rooms').child(roomId).child('video_call').child('streaming')
+      streamRef.on('child_added', function(snapshot){
+        console.log(snapshot);
+        if(snapshot.key === p.id){
+          
+        
+        }else{
+          openStream(stream =>{
+            streamRecored = stream;
+          // playVideo(stream, 'localStream');
+          console.log(snapshot.key);
+            callSide = p.call(snapshot.key,stream);
+            // console.log(call);
+            callSide.on('stream',remoteStream =>{
+              console.log(remoteStream);
+              playVideo(remoteStream,'localStream');
+            })
+            callSide.on('close',function(){
+              stream.getVideoTracks().forEach(function (track) {
+                track.stop();
+              });
+              stream.getAudioTracks().forEach(function (track) {
+                track.stop();
+              });
+              let video = $('#localStream');
+              video.removeAttr("src");
+            })
+        })
+        }
+      })
       requestRef = firebase.database().ref().child('rooms').child(roomId).child('video_call').child('request')
       requestRef.on('child_added', function(snapshot){
         if(snapshot.exists()){
           if(snapshot.key !== component.props.currentUserId){
             if(window.confirm("video call from another user")){
               firebase.database().ref().child('rooms').child(roomId).child('video_call').child('request').remove();
-              // firebase.database().ref().child('rooms').child(roomId).child('video_call').child('streaming').child(component.props.currentUserId)
-              // .set({
-
-              // })
-              // pc.onaddstream = (event => video.srcObject = event.stream);
-
+              let streamref = firebase.database().ref().child('rooms').child(roomId).child('video_call').child('streaming').child(p.id)
+              .push({
+                "id": "123"
+              })
+              streamref.remove();
             }else{
               firebase.database().ref().child('rooms').child(roomId).child('video_call').child('request').remove();
               let ref = firebase.database().ref().child('rooms').child(roomId).child('video_call').child('cancel_request').child(component.props.currentUserId).push({
@@ -140,37 +187,62 @@ class ChatSetting extends Component {
   }
 
   endCall(){
+    try{
+      // 
+    //   for (let track of streamRecored.getTracks()) { 
+    //     track.stop()
+    // }
+      // streamRecored.stop();
+        
+      callSide.close();
+      answerSide.close();    
+    }catch(err){
 
+    }
   }
   makeCallRequest(){
+    // var servers = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]};    
+    
+    // p = Peer(this.state.current_user_id,{key: '1xeeuumlu40a4i', config: servers});
+    // var call;
+    // console.log(p);
+    // openStream(stream =>{
+    //   // playVideo(stream, 'localStream');
+    //   let friendId = '';
+    //   if(p.id === '7sAxerFIIMPJKjygeKUhNWP10x23'){
+    //     friendId = 'V3ZlQkCN9qhuMJpQNwMWo8VNu7r1';
+    //   }else{
+    //     friendId = '7sAxerFIIMPJKjygeKUhNWP10x23';
+    //   }
+    //   call = p.call(friendId,stream);
+    //   console.log(call);
+    //   call.on('stream',remoteStream =>{
+    //     console.log(remoteStream);
+    //     playVideo(remoteStream,'localStream');
+    //   })
+    // })
+    
+    // p.on('call', function(called) {
+    //   openStream(stream =>{
+    //     called.answer(stream);
+
+    //   })
+    // });
+
     let properties = {};
     properties['rid'] = this.state.current_room_id;
     properties['uid'] = this.state.current_user_id;
     let component = this;
-    video_call.checkRequest(properties, function(issuccess){
+    videoCall.checkRequest(properties, function(issuccess){
       if(issuccess){
         alert('already been used');
       }else{
-        video_call.createRequest(properties,function(issuccess){
-      
+        videoCall.createRequest(properties,function(issuccess){
+          
         });
       }
     });
-    // console.log("abc");
-    // navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
     
-    // var constraints = { audio: false, video: true };
-    // var video = document.querySelector("video");
-
-    // function successCallback(stream) {
-    //   video.src = window.URL.createObjectURL(stream);
-    // }
-
-    // function errorCallback(error){
-    //   console.log("getUserMedia error: ", error);
-    // }
-
-    // navigator.getUserMedia(constraints, successCallback, errorCallback);
   }  
   renderAva() {
     if(this.state.current_user_type === 'bot') {
@@ -233,10 +305,10 @@ class ChatSetting extends Component {
               }
             </div>
           </div>
-          <video className='video' autoPlay></video>
+          <video className='video' id='localStream' autoPlay></video>
           <button className='button-call' onClick={this.makeCallRequest
       .bind(this)} >Call</button>
-          <button className='button-call' onClick={this.endCall} >End</button>
+          <button className='button-call' onClick={this.endCall.bind(this)} >End</button>
         </div>
       </div> 
     )

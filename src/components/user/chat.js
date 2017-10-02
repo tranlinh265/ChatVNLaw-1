@@ -209,7 +209,6 @@ class Chat extends Component {
   }
 
   render() {
-    console.log('123');
     return(
       <div className='chat-window' id='chat-window'>
         <div className='title'>
