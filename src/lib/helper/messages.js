@@ -8,7 +8,7 @@ module.exports = {
             let ref = firebase.database().ref().child('rooms').child(properties.rid).child('messages').orderByChild('msg_ts').startAt(properties.ts);
             ref.on('child_added', function(snapshot){
                 if(snapshot.exists()){
-                    let item = itemConvert.exportItem(snapshot,properties);
+                    let item = itemConvert(snapshot,properties);
                     return callback('child_added', item, ref);
                 }
             })
@@ -29,7 +29,7 @@ module.exports = {
                     
                     data.forEach(function(element){
                         count ++;
-                        let item  = itemConvert.exportItem(element,properties);
+                        let item  = itemConvert(element,properties);
                         return callback(item,count);
                     });
                 }

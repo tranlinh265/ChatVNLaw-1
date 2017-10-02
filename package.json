@@ -12,6 +12,7 @@
     "firebase": "^4.4.0",
     "form-data": "^2.2.0",
     "history": "^4.7.2",
+    "https": "^1.0.0",
     "jquery": "^3.2.1",
     "node": "^8.3.0",
     "node-sass-chokidar": "^0.0.3",

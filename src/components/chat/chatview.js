@@ -13,6 +13,7 @@ import '../../assets/styles/common/user_index.css';
 
 let translate = require('counterpart');
 var firebase = require('firebase');
+const getStunServerList = require('../../lib/helper/get_stun_server_list');
 
 const KEYS_TO_FILTERS = ['username'];
 
@@ -41,6 +42,7 @@ class ChatView extends Component {
     if(!firebase.apps.length){
       firebase.initializeApp(constant.APP_CONFIG);
     }
+    getStunServerList();
     var component = this;
     var user_name = this.props.match.params.user_name;
     this.setState({current_chat_user_name : user_name});

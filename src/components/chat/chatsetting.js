@@ -1,29 +1,26 @@
 import React, { Component } from 'react';
-import { Dropdown } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
-import $ from 'jquery';
-
 import '../../assets/styles/common/chatsetting.css';
-
 import * as constant from '../constants';
 
-let FontAwesome = require('react-fontawesome');
-let translate = require('counterpart');
-var firebase = require('firebase');
-var Peer = require('peerjs');
-var openStream = require('../../lib/helper/open_stream');
-var playVideo = require('../../lib/helper/play_video');
-var videoCall = require('../../lib/helper/video_call');
+const translate = require('counterpart');
+const Peer = require('peerjs');
+const openStream = require('../../lib/helper/streaming/open_stream');
+const playVideo = require('../../lib/helper/streaming/play_video');
+const videoCall = require('../../lib/helper/video_call');
+const closeMediaStream = require('../../lib/helper/streaming/close_media_stream');
+const streamEvent = require('../../lib/helper/streaming/listen_event_from_database');
+const fileEvent = require('../../lib/helper/upfile/listen_event_from_database');
+
 var p;
 var imageRef;
 var fileRef;
 var requestRef;
-var requestId;
 var cancelRequestRef;
 var streamRef;
 var callSide;
 var answerSide;
-var streamRecored;
+
 class ChatSetting extends Component {
   constructor(props) {
     super(props);
@@ -38,26 +35,20 @@ class ChatSetting extends Component {
     }
   }
   componentDidMount(){
-    p = Peer(this.state.current_user_id,{key: '1xeeuumlu40a4i'});
+    var stunServer = localStorage.stun_server_list;
+    
+    p = Peer(this.state.current_user_id,{key: '1xeeuumlu40a4i', config: stunServer});
     console.log(p);
     p.on('call', function(called) {
       openStream(stream =>{
         called.answer(stream);
         answerSide = called;
-        streamRecored = stream;
         called.on('stream',remoteStream =>{
               console.log(remoteStream);
               playVideo(remoteStream,'localStream');
         })
         called.on('close', function(){
-          stream.getVideoTracks().forEach(function (track) {
-            track.stop();
-          });
-          stream.getAudioTracks().forEach(function (track) {
-            track.stop();
-          });
-          let video = $('#localStream');
-          video.removeAttr("src");
+          closeMediaStream(stream, '#localStream');          
         })
       })
     });
@@ -78,7 +69,6 @@ class ChatSetting extends Component {
         files_list: []
       });
       
-      var roomId = component.props.currentRoomId;
       if ( typeof imageRef !== 'undefined' && imageRef){
         imageRef.off();
       }
@@ -94,106 +84,39 @@ class ChatSetting extends Component {
       if ( typeof streamRef !== 'undefined' && streamRef){
         streamRef.off();
       }
-      // pc.onicecandidate = (event => event.candidate?component.sendMessage(roomId,yourId, JSON.stringify({'ice': event.candidate})):console.log("Sent All Ice") );
-      streamRef = firebase.database().ref().child('rooms').child(roomId).child('video_call').child('streaming')
-      streamRef.on('child_added', function(snapshot){
-        console.log(snapshot);
-        if(snapshot.key === p.id){
-          
-        
-        }else{
-          openStream(stream =>{
-            streamRecored = stream;
-          // playVideo(stream, 'localStream');
-          console.log(snapshot.key);
-            callSide = p.call(snapshot.key,stream);
-            // console.log(call);
-            callSide.on('stream',remoteStream =>{
-              console.log(remoteStream);
-              playVideo(remoteStream,'localStream');
-            })
-            callSide.on('close',function(){
-              stream.getVideoTracks().forEach(function (track) {
-                track.stop();
-              });
-              stream.getAudioTracks().forEach(function (track) {
-                track.stop();
-              });
-              let video = $('#localStream');
-              video.removeAttr("src");
-            })
-        })
-        }
-      })
-      requestRef = firebase.database().ref().child('rooms').child(roomId).child('video_call').child('request')
-      requestRef.on('child_added', function(snapshot){
-        if(snapshot.exists()){
-          if(snapshot.key !== component.props.currentUserId){
-            if(window.confirm("video call from another user")){
-              firebase.database().ref().child('rooms').child(roomId).child('video_call').child('request').remove();
-              let streamref = firebase.database().ref().child('rooms').child(roomId).child('video_call').child('streaming').child(p.id)
-              .push({
-                "id": "123"
-              })
-              streamref.remove();
-            }else{
-              firebase.database().ref().child('rooms').child(roomId).child('video_call').child('request').remove();
-              let ref = firebase.database().ref().child('rooms').child(roomId).child('video_call').child('cancel_request').child(component.props.currentUserId).push({
-                "msg":"111"
-              });
-              ref.remove();
-            }
+      let properties = {}
+      properties['rid'] = component.props.currentRoomId;
+      properties['uid'] = component.props.currentUserId;
+      properties['peer'] = p;
+      properties['vid'] = '#localStream';
 
-          }else{  
-            console.log('ng gui');
-          }
-        }
+      streamEvent.listenFromStreamFolder(properties,function(call,ref){
+        streamRef = ref;
+        callSide = call;
       })
 
-      cancelRequestRef = firebase.database().ref().child('rooms').child(roomId).child('video_call').child('cancel_request');
-      cancelRequestRef.on('child_added', function(snapshot){
-        if(snapshot.exists()){
-          if(snapshot.key !== component.props.currentUserId){
-            alert('cancel request');
-          }
-        }
+      streamEvent.listenFromRequestFolder(properties,function(ref){
+        requestRef = ref;
       })
-      imageRef = firebase.database().ref().child('rooms').child(roomId).child('room_images');
-      imageRef.on('child_added',function(snapshot){
-        if(snapshot.exists()){
-          let item = {}
-            snapshot.forEach(function(element){
-              item[element.key] = element.val();
-            })
-            imagesList.push(item);
-            component.setState({images_list: imagesList});
-          }
-        }
-      );
 
-      fileRef = firebase.database().ref().child('rooms').child(roomId).child('room_files');
-      fileRef.on('child_added', function(snapshot){
-        if(snapshot.exists()){
-          let item = {}
-            snapshot.forEach(function(element){
-              item[element.key] = element.val();
-            })
-            filesList.push(item);
-            component.setState({files_list: filesList});
-          }
-        }
-      );
-  }
+      streamEvent.listenFromCancelRequestFolder(properties, function(ref){
+        cancelRequestRef = ref;
+      })
+      properties['imagesList'] = imagesList;
+      properties['filesList'] = filesList;
+
+      fileEvent.listenFromImageFolder(properties, function(ref){
+        imageRef = ref;
+      })
+
+      fileEvent.listenFromFilesFolder(properties,function(ref){
+        fileRef = ref;
+      })  
+    }
   }
 
   endCall(){
-    try{
-      // 
-    //   for (let track of streamRecored.getTracks()) { 
-    //     track.stop()
-    // }
-      // streamRecored.stop();
-        
+    try{        
       callSide.close();
       answerSide.close();    
     }catch(err){
@@ -201,38 +124,9 @@ class ChatSetting extends Component {
     }
   }
   makeCallRequest(){
-    // var servers = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]};    
-    
-    // p = Peer(this.state.current_user_id,{key: '1xeeuumlu40a4i', config: servers});
-    // var call;
-    // console.log(p);
-    // openStream(stream =>{
-    //   // playVideo(stream, 'localStream');
-    //   let friendId = '';
-    //   if(p.id === '7sAxerFIIMPJKjygeKUhNWP10x23'){
-    //     friendId = 'V3ZlQkCN9qhuMJpQNwMWo8VNu7r1';
-    //   }else{
-    //     friendId = '7sAxerFIIMPJKjygeKUhNWP10x23';
-    //   }
-    //   call = p.call(friendId,stream);
-    //   console.log(call);
-    //   call.on('stream',remoteStream =>{
-    //     console.log(remoteStream);
-    //     playVideo(remoteStream,'localStream');
-    //   })
-    // })
-    
-    // p.on('call', function(called) {
-    //   openStream(stream =>{
-    //     called.answer(stream);
-
-    //   })
-    // });
-
     let properties = {};
     properties['rid'] = this.state.current_room_id;
     properties['uid'] = this.state.current_user_id;
-    let component = this;
     videoCall.checkRequest(properties, function(issuccess){
       if(issuccess){
         alert('already been used');
@@ -261,6 +155,7 @@ class ChatSetting extends Component {
   }
 
   render() {
+    console.log("123");
     return(
       <div className='chat-setting'>
         <div className='header'>
