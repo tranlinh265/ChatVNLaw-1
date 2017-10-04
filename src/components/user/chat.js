@@ -52,14 +52,9 @@ class Chat extends Component {
     );
   }
 
-  componentWillMount() {
-  //   currentUser = firebase.auth().currentUser;
-  // }
-  //   componentWillReceiveProps(nextProps){
-      
+  componentWillMount() {      
     var component = this;
     currentUser = firebase.auth().currentUser;
-    // if(component.props.currentChatUserId !== this.state.chat_target_uid){
     component.setState({chat_target_uname: component.props.currentChatUserName});
     component.setState({chat_target_uid: component.props.currentChatUserId});
     component.setState({messages: []})
@@ -83,33 +78,12 @@ class Chat extends Component {
             currentUser.uid + '_' + component.props.currentChatUserId],
           'messages':[]
         })
-        ref.child(newPostRef.key).on('child_added',function(data){   
-          if(data.exists()){
-            let roomId = newPostRef.key;
-            component.setState({current_room_id: roomId});
-            firebase.database().ref().child('reference').child(currentUser.uid +
-              component.props.currentChatUserId).set({
-                roomId
-            }).then(function(){
-
-            }).catch(function(error){
-
-            });
-            firebase.database().ref().child('reference').child(component.props.currentChatUserId
-              + currentUser.uid).set({
-                roomId
-            }).then(function(){
-
-            }).catch(function(error){
-
-            });
-              component.streamingMessages();
-              component.loadHistory("" + (new Date()).getTime, true)
-            }             
-          })
-        }
-      });
-    // }
+        let roomId = newPostRef.key;
+        component.setState({current_room_id: roomId});
+        component.streamingMessages();
+        component.loadHistory("" + (new Date()).getTime, true)
+      }
+    });
   }
 
   loadHistory(timestamp, autoScroll){

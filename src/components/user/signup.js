@@ -92,10 +92,10 @@ class UserSignUp extends Component {
                 "status" : "online",
                 "avatarUrl" : constant.DEFAULT_AVATAR_URL
               }).then(function(){
-                success = success + 1;
-                if(success === 2){
+                // success = success + 1;
+                // if(success === 2){
                   window.location = constant.BASE_URL+'/chat/'+user.displayName;
-                }
+                // }
               }).catch(function(error){
                 component.showAlert(error.message);
                 user.delete().then(function() {
@@ -106,41 +106,41 @@ class UserSignUp extends Component {
                 return;              
               })
   
-              let ref = firebase.database().ref().child('rooms');
-              let newPostRef = ref.push()
-              newPostRef.set({
-                "members":[user.uid,user.uid,user.uid+'_'+user.uid],
-                "messages":[]
-              }).catch(function(error){
-                component.showAlert(error.message);
-                user.delete().then(function() {
-                  // User deleted.
-                }).catch(function(error) {
-                  // An error happened.
-                });
-                return;
-              })
-              ref.child(newPostRef.key).on('child_added',function(snapshot){
-                if(snapshot.exists()){
-                  var roomId = newPostRef.key;
-                  firebase.database().ref().child('reference').child(user.uid + user.uid).set({
-                    roomId
-                  }).then(function(){
-                    success = success + 1;
-                    if(success === 2){
-                      window.location = constant.BASE_URL+'/chat/'+user.displayName;
-                    }
-                  }).catch(function(error){
-                    component.showAlert(error.message);
-                    user.delete().then(function() {
-                      // User deleted.
-                    }).catch(function(error) {
-                      // An error happened.
-                    });
-                    return; 
-                  })
-                }
-              })
+              // let ref = firebase.database().ref().child('rooms');
+              // let newPostRef = ref.push()
+              // newPostRef.set({
+              //   "members":[user.uid,user.uid,user.uid+'_'+user.uid],
+              //   "messages":[]
+              // }).catch(function(error){
+              //   component.showAlert(error.message);
+              //   user.delete().then(function() {
+              //     // User deleted.
+              //   }).catch(function(error) {
+              //     // An error happened.
+              //   });
+              //   return;
+              // })
+              // ref.child(newPostRef.key).on('child_added',function(snapshot){
+              //   if(snapshot.exists()){
+              //     var roomId = newPostRef.key;
+              //     firebase.database().ref().child('reference').child(user.uid + user.uid).set({
+              //       roomId
+              //     }).then(function(){
+              //       success = success + 1;
+              //       if(success === 2){
+              //         window.location = constant.BASE_URL+'/chat/'+user.displayName;
+              //       }
+              //     }).catch(function(error){
+              //       component.showAlert(error.message);
+              //       user.delete().then(function() {
+              //         // User deleted.
+              //       }).catch(function(error) {
+              //         // An error happened.
+              //       });
+              //       return; 
+              //     })
+              //   }
+              // })
             }).catch(function(error) {
               // An error happened.
               component.showAlert(error.message);

@@ -20,7 +20,7 @@ var cancelRequestRef;
 var streamRef;
 var callSide;
 var answerSide;
-
+var test;
 class ChatSetting extends Component {
   constructor(props) {
     super(props);
@@ -35,8 +35,9 @@ class ChatSetting extends Component {
     }
   }
   componentDidMount(){
-    var stunServer = localStorage.stun_server_list;
-    
+    var stunServer = JSON.parse(localStorage.stun_server_list);
+    // console.log(stunServer);
+    // var tmp = {"iceServers":[{"url":"stun:s3.xirsys.com"},{"username":"8d319f1a-a8c8-11e7-9e7e-dc5e36a751e0","url":"turn:s3.xirsys.com:80?transport=udp","credential":"8d31a028-a8c8-11e7-bfb2-a21efe2bbbaa"},{"username":"8d319f1a-a8c8-11e7-9e7e-dc5e36a751e0","url":"turn:s3.xirsys.com:3478?transport=udp","credential":"8d31a028-a8c8-11e7-bfb2-a21efe2bbbaa"},{"username":"8d319f1a-a8c8-11e7-9e7e-dc5e36a751e0","url":"turn:s3.xirsys.com:80?transport=tcp","credential":"8d31a028-a8c8-11e7-bfb2-a21efe2bbbaa"},{"username":"8d319f1a-a8c8-11e7-9e7e-dc5e36a751e0","url":"turn:s3.xirsys.com:3478?transport=tcp","credential":"8d31a028-a8c8-11e7-bfb2-a21efe2bbbaa"},{"username":"8d319f1a-a8c8-11e7-9e7e-dc5e36a751e0","url":"turns:s3.xirsys.com:443?transport=tcp","credential":"8d31a028-a8c8-11e7-bfb2-a21efe2bbbaa"},{"username":"8d319f1a-a8c8-11e7-9e7e-dc5e36a751e0","url":"turns:s3.xirsys.com:5349?transport=tcp","credential":"8d31a028-a8c8-11e7-bfb2-a21efe2bbbaa"}]};
     p = Peer(this.state.current_user_id,{key: '1xeeuumlu40a4i', config: stunServer});
     console.log(p);
     p.on('call', function(called) {
@@ -44,8 +45,8 @@ class ChatSetting extends Component {
         called.answer(stream);
         answerSide = called;
         called.on('stream',remoteStream =>{
-              console.log(remoteStream);
-              playVideo(remoteStream,'localStream');
+          console.log(remoteStream);
+          playVideo(remoteStream,'localStream');
         })
         called.on('close', function(){
           closeMediaStream(stream, '#localStream');          
@@ -68,7 +69,9 @@ class ChatSetting extends Component {
         images_list: [],
         files_list: []
       });
-      
+      if(!!test){
+        console.log('helu');
+      }
       if ( typeof imageRef !== 'undefined' && imageRef){
         imageRef.off();
       }
@@ -90,7 +93,7 @@ class ChatSetting extends Component {
       properties['peer'] = p;
       properties['vid'] = '#localStream';
 
-      streamEvent.listenFromStreamFolder(properties,function(call,ref){
+      streamEvent.listenFromStreamFolder(properties,p,function(call,ref){
         streamRef = ref;
         callSide = call;
       })
@@ -100,7 +103,7 @@ class ChatSetting extends Component {
       })
 
       streamEvent.listenFromCancelRequestFolder(properties, function(ref){
-        cancelRequestRef = ref;
+        cancelRequestRef = ref; 
       })
       properties['imagesList'] = imagesList;
       properties['filesList'] = filesList;
