@@ -40,9 +40,9 @@ exports.createRoomReference = functions.database.ref('/rooms/{roomId}')
 
 exports.createUserAccount = functions.auth.user().onCreate(event =>{
     const uid = event.data.uid
-    const email = event.data.email
+    const email = event.data.email || ''
     const photoUrl = event.data.photoURL || "https://image.ibb.co/i23jUF/default_ava.png"
-    const displayName = event.displayName || 'default'
+    const displayName = event.data.displayName || ''
 
     const newUserRef = ref.child(`/users/${uid}`)
     return newUserRef.set({
