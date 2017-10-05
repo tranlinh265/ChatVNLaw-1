@@ -35,7 +35,7 @@ class ChatSetting extends Component {
     }
   }
   componentDidMount(){
-    var stunServer = localStorage.stun_server_list;
+    var stunServer = JSON.parse(localStorage.stun_server_list);
     
     p = Peer(this.state.current_user_id,{key: '1xeeuumlu40a4i', config: stunServer});
     console.log(p);
@@ -104,6 +104,7 @@ class ChatSetting extends Component {
       })
       properties['imagesList'] = imagesList;
       properties['filesList'] = filesList;
+      properties['component'] = component;
 
       fileEvent.listenFromImageFolder(properties, function(ref){
         imageRef = ref;
@@ -123,6 +124,7 @@ class ChatSetting extends Component {
 
     }
   }
+
   makeCallRequest(){
     let properties = {};
     properties['rid'] = this.state.current_room_id;
@@ -153,6 +155,7 @@ class ChatSetting extends Component {
 
   renderConfig() {
   }
+
 
   render() {
     console.log("123");

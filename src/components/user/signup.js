@@ -85,12 +85,8 @@ class UserSignUp extends Component {
               // Update successful.
               var success = 0;
               
-              firebase.database().ref().child('users').child(user.uid).set({
-                "username" : username,
-                "email" : user.email,
-                "role" : "user",
-                "status" : "online",
-                "avatarUrl" : constant.DEFAULT_AVATAR_URL
+              firebase.database().ref().child('users').child(user.uid).update({
+                "username" : username
               }).then(function(){
                 success = success + 1;
                 if(success === 2){

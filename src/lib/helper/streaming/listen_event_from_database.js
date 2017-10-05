@@ -16,8 +16,8 @@ module.exports = {
                     })
                     call.on('close', function(){
                         closeMediaStream(stream, properties.vid);
-										})
-										return callback(call, ref);
+                    })
+                    return callback(call, ref);
                 })
             }
         })
@@ -27,35 +27,36 @@ module.exports = {
         let ref = firebase.database().ref().child('rooms').child(properties.rid).child('video_call').child('request')
         ref.on('child_added', function(snapshot){
             if(snapshot.exists()){
-							if(snapshot.key !== properties.uid){
-								if(window.confirm("video call from another user")){
-									firebase.database().ref().child('rooms').child(properties.rid).child('video_call').child('request').remove();
-									let streamRef = firebase.database().ref().child('rooms').child(properties.rid).child('video_call').child('streaming').child(properties.peer.id)
-									.push({
-											"id": "123"
-									})
-									streamRef.remove();
-								}else{
-									firebase.database().ref().child('rooms').child(properties.rid).child('video_call').child('request').remove();
-									let cancelRequestRef = firebase.database().ref().child('rooms').child(properties.rid).child('video_call').child('cancel_request').child(properties.uid).push({
-											"msg":"111"
-									});
-									cancelRequestRef.remove();
-								}
-							}
+                if(snapshot.key !== properties.uid){
+                    if(window.confirm("video call from another user")){
+                        firebase.database().ref().child('rooms').child(properties.rid).child('video_call').child('request').remove();
+                        let streamRef = firebase.database().ref().child('rooms').child(properties.rid).child('video_call').child('streaming').child(properties.peer.id)
+                        .push({
+                            "id": "123"
+                        })
+                        streamRef.remove();
+                    }else{
+                        firebase.database().ref().child('rooms').child(properties.rid).child('video_call').child('request').remove();
+                        let cancelRequestRef = firebase.database().ref().child('rooms').child(properties.rid).child('video_call').child('cancel_request').child(properties.uid).push({
+                            "msg":"111"
+                        });
+                        cancelRequestRef.remove();
+                    }
+                }
             }
           })
         return callback(ref);
 		},
 		listenFromCancelRequestFolder: function(properties, callback){
 			let ref = firebase.database().ref().child('rooms').child(properties.rid).child('video_call').child('cancel_request');
-      ref.on('child_added', function(snapshot){
-        if(snapshot.exists()){
-          if(snapshot.key !== properties.uid){
-            alert('cancel request');
-          }
-        }
-      })
+            ref.on('child_added', function(snapshot){
+                if(snapshot.exists()){
+                    if(snapshot.key !== properties.uid){
+                        alert('cancel request');
+                    }
+                }
+            })
+            return callback(ref);
 		}
 
 }
