@@ -8,10 +8,10 @@ function exportItem(data,properties){
 
   if(item["sender_uid"] === properties.uid){
     item["type"] = 0;
-    item["image"] = constant.avaUser;
+    item["image"] = data.val().avatarUrl;
   }else{
     item["type"] = 1;
-    item["image"] = constant.avaLawyer;
+    item["image"] = data.val().avatarUrl;
   }
   return item;
 }

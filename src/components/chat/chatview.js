@@ -13,6 +13,7 @@ import '../../assets/styles/common/user_index.css';
 
 let translate = require('counterpart');
 var firebase = require('firebase');
+var currentUser;
 const getStunServerList = require('../../lib/helper/get_stun_server_list');
 
 const KEYS_TO_FILTERS = ['username'];
@@ -28,13 +29,7 @@ class ChatView extends Component {
     super(props);
     this.state = {
       users: [],
-      current_chat_user_name: '',
-      current_chat_user_id: '',
-      current_chat_user_type: '',
-      searchTerm: '',
-      current_user_name: '',
-      current_user_id: '',
-      user_names_list: ''
+      searchTerm: ''
     }
   }
 
@@ -43,103 +38,76 @@ class ChatView extends Component {
       firebase.initializeApp(constant.APP_CONFIG);
     }
     getStunServerList();
-    var component = this;
-    var user_name = this.props.match.params.user_name;
-    this.setState({current_chat_user_name : user_name});
-    firebase.database().ref('users').orderByChild('username')
-      .equalTo(user_name).once('value')
-    .then(function(snapshot){
-      if(snapshot.exists()){
-        snapshot.forEach(function(element){
-          component.setState({current_chat_user_id: element.key});
-        })
-      }else{
-        window.location = constant.BASE_URL + '/';
+    firebase.auth().onAuthStateChanged(function(user){
+      if(!user){
+        window.location = constant.BASE_URL + constant.SIGN_IN_URI; 
       }
+      currentUser = user;
     })
   }
   
   componentDidMount() {
     var component = this;
     
-    firebase.auth().onAuthStateChanged(function(user) {
-      if(!user){
-        window.location = constant.BASE_URL + constant.SIGN_IN_URI; 
-      }
-      let ref = firebase.database().ref('users').orderByChild('role').equalTo('user');
-      ref.once('value')
-      .catch(function(error){
+    
+    let ref = firebase.database().ref('users').orderByChild('role').equalTo('user');
+    ref.once('value')
+    .catch(function(error){
 
-      }).then(function(snapshot){
-        var userArr = []
-        ref.on('child_added', function(data) {
-          
-          var item = {
-            username: data.val().username,
-            displayName: data.val().username,
-            _id : data.key,
-            status: data.val().status,
-            avatarUrl: data.val().avatarUrl
+    }).then(function(snapshot){
+      var userArr = []
+      ref.on('child_added', function(data) {
+        
+        var item = {
+          username: data.val().username,
+          displayName: data.val().username,
+          uid : data.key,
+          status: data.val().status,
+          avatarUrl: data.val().avatarUrl
+        }
+        if(data.key === currentUser.uid){
+          userArr.unshift(item);
+          component.setState({users : userArr})          
+          return;
+        }
+        userArr.push(item);
+        component.setState({users : userArr})
+      });
+      ref.on('child_changed', function(data) {
+        
+        userArr.every(function(element,index){           
+          if(element.uid === data.key){
+            userArr[index] = {
+              username: data.val().username,
+              uid : data.key,
+              status: data.val().status,
+              avatarUrl: data.val().avatarUrl
+            };
+            component.setState({users : userArr})
+            
+            return false;
+          }else{
+            return true;
           }
-          if(data.key === user.uid){
-            component.setState({current_user_name: item.username});
-            component.setState({current_user_id: user.uid});
-            item['displayName'] = 'My.Chat';
-            userArr.unshift(item);
-            component.setState({users: userArr});                      
-            return;
+        })
+      });
+      ref.on('child_removed', function(data) {
+        if(data.key === currentUser.uid){
+          return;
+        }
+        userArr.every(function(element,index){           
+          if(element.uid === data.key){
+            userArr.splice(index,1);
+            component.setState({users : userArr})            
+            return false;
+          }else{
+            return true;
           }
-          userArr.push(item);
-          component.setState({users: userArr});          
-        });
-        ref.on('child_changed', function(data) {
-          let tmp = data.val().username;
-          if(data.key === user.uid){
-            tmp = 'My.Chat';
-          }
-          userArr.every(function(element,index){           
-            if(element._id === data.key){
-              userArr[index] = {
-                username: data.val().username,
-                displayName: tmp,
-                _id : data.key,
-                status: data.val().status,
-                avatarUrl: data.val().avatarUrl
-              };
-              component.setState({users: userArr});              
-              return false;
-            }else{
-              return true;
-            }
-          })
-        });
-        ref.on('child_removed', function(data) {
-          if(data.key === user.uid){
-            return;
-          }
-          userArr.every(function(element,index){           
-            if(element._id === data.key){
-              userArr.splice(index,1);
-              component.setState({users: userArr});              
-              return false;
-            }else{
-              return true;
-            }
-          })
-        });
+        })
+      });
 
-      });    
-    }, function(error){
-      window.location = constant.BASE_URL + constant.SIGN_IN_URI;
-    });
-  }
-
-  changeUserChat(username, usertype, userId) {
-    if (this.state.current_chat_user_name !== username) {
-      this.setState({current_chat_user_name: username});
-      this.setState({current_chat_user_type: usertype});
-      this.setState({current_chat_user_id: userId});
-    }
+    });    
+    
   }
 
   elementBaseStatus(userStatus) {
@@ -162,13 +130,13 @@ class ChatView extends Component {
 
   changeStatus(event, data) {
     firebase.database().ref('users')
-      .child(this.state.current_user_id).update({'status' : data.text});
+      .child(currentUser.uid).update({'status' : data.text});
   }
 
   renderStatus(userStatus, username) {
-    if (username === this.state.current_user_name) {
+    if (username === currentUser.displayName) {
       return(
-        <Dropdown id={this.state.current_user_id}
+        <Dropdown id={currentUser.uid}
           icon={this.elementBaseStatus(userStatus)}>
           <Dropdown.Menu>
             <Dropdown.Item text={translate('app.user.status.online')}
@@ -223,23 +191,22 @@ class ChatView extends Component {
             </div>
             {
               filteredUsers.map(user => {
-                if(user.username !== this.state.current_user_name) {
+                if(user.username !== currentUser.displayName) {
                   if(user.type !== 'bot') {
                     return(
                       <div className={
                         this.props.match.params.user_name === user.username
                           ? 'user active-link' : 'user'}
-                        key={user._id}>
+                        key={user.uid}>
                         {this.renderStatus(user.status, user.username)}
-                        <Link to={'/chat/' + user.username} key={user._id}
-                          onClick={this.changeUserChat.bind(this, user.username,
-                            user.type, user._id)}
+                        <Link to={'/chat/' + user.username} key={user.uid}
                           activeClassName='active-link'>
-                            <List.Item key={user._id}>
+                            <List.Item key={user.uid}>
                               <Image avatar src={user.avatarUrl}/>
                               <List.Content>
                                 <List.Header>{user.displayName}</List.Header>
                               </List.Content>
+                            
                               <div className='unread-mess'>
                                 123
                               </div>
@@ -253,13 +220,11 @@ class ChatView extends Component {
                       <div className={
                         this.props.match.params.user_name === user.username
                           ? 'user active-link' : 'user'}
-                        key={user._id}>
+                        key={user.uid}>
                         {this.renderStatus(user.status, user.username)}
-                        <Link to={'/chat/' + user.username} key={user._id}
-                          onClick={this.changeUserChat.bind(this,
-                            user.username, user.type, user._id)}
+                        <Link to={'/chat/' + user.username} key={user.uid}
                           activeClassName='active-link'>
-                            <List.Item key={user._id}>
+                            <List.Item key={user.uid}>
                               <Image avatar src={constant.avaBot}/>
                               <List.Content>
                                 <List.Header>{user.username}</List.Header>
@@ -278,13 +243,11 @@ class ChatView extends Component {
                     <div className={
                       this.props.match.params.user_name === user.username
                         ? 'user active-link' : 'user'}
-                      key={user._id}>
+                      key={user.uid}>
                       {this.renderStatus(user.status, user.username)}
-                      <Link to={'/chat/' + user.username} key={user._id}
-                        onClick={this.changeUserChat.bind(this, user.username,
-                          user.type, user._id)}
+                      <Link to={'/chat/' + user.username} key={user.uid}
                         activeClassName='active-link'>
-                          <List.Item key={user._id}>
+                          <List.Item key={user.uid}>
                             <Image avatar src={user.avatarUrl}/>
                             <List.Content>
                               <List.Header>
@@ -307,8 +270,7 @@ class ChatView extends Component {
                 render={
                   (props) => (
                     <Chat {...props}
-                      currentChatUserName={user.username}
-                      currentChatUserId={user._id} />
+                      targetChatUser={user}/>
                   )
                 }/>
             </Switch>

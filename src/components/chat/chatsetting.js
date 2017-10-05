@@ -21,24 +21,27 @@ var streamRef;
 var callSide;
 var answerSide;
 
+var currentUser;
+var targetUser;
+
 class ChatSetting extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      current_user_id:'',
-      current_user_name: '',
       current_user_type: '',
       current_room_id: '',
       images_list:[],
-      files_list: [],
-      chat_target_uid:''
+      files_list: []
     }
+  }
+  componentWillMount() {
+    currentUser = this.props.currentUser;
+    targetUser = this.props.targetChatUser;
   }
   componentDidMount(){
     var stunServer = JSON.parse(localStorage.stun_server_list);
     
-    p = Peer(this.state.current_user_id,{key: '1xeeuumlu40a4i', config: stunServer});
-    console.log(p);
+    p = Peer(currentUser.uid,{key: '1xeeuumlu40a4i', config: stunServer});
     p.on('call', function(called) {
       openStream(stream =>{
         called.answer(stream);
@@ -61,9 +64,6 @@ class ChatSetting extends Component {
       var imagesList = [];
       var filesList = [];
       component.setState({
-        current_user_id : component.props.currentUserId,
-        chat_target_uid : component.props.targetChatUserId,
-        current_user_name: component.props.targetChatUserName,
         current_room_id: component.props.currentRoomId,
         images_list: [],
         files_list: []
@@ -128,7 +128,7 @@ class ChatSetting extends Component {
   makeCallRequest(){
     let properties = {};
     properties['rid'] = this.state.current_room_id;
-    properties['uid'] = this.state.current_user_id;
+    properties['uid'] = currentUser.uid;
     videoCall.checkRequest(properties, function(issuccess){
       if(issuccess){
         alert('already been used');
@@ -148,7 +148,7 @@ class ChatSetting extends Component {
     }
     else {
       return(
-        <img src={constant.avaLawyer} alt='ava-lawyer'/>
+        <img src={targetUser.avatarUrl} alt='ava-lawyer'/>
       )
     }
   }
@@ -158,7 +158,6 @@ class ChatSetting extends Component {
 
 
   render() {
-    console.log("123");
     return(
       <div className='chat-setting'>
         <div className='header'>
@@ -166,7 +165,7 @@ class ChatSetting extends Component {
             {this.renderAva()}
           </div>
           <div className='info'>
-            <div className='user-name'>{this.state.current_user_name}</div>
+            <div className='user-name'>{targetUser.username}</div>
           </div>
           {/* <div className='config'>
             {this.renderConfig()}

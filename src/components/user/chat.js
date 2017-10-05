@@ -12,7 +12,7 @@ let translate = require('counterpart');
 let FontAwesome = require('react-fontawesome');
 var firebase = require('firebase');
 var currentUser;
-
+var targetUser;
 var messRef;
 
 class Chat extends Component {
@@ -20,8 +20,6 @@ class Chat extends Component {
     super(props);
     this.state = {
       messages: [],
-      chat_target_uname: '',
-      chat_target_uid: '',
       current_room_id: ''
     }
   }
@@ -52,19 +50,13 @@ class Chat extends Component {
     );
   }
 
-  componentWillMount() {
-  //   currentUser = firebase.auth().currentUser;
-  // }
-  //   componentWillReceiveProps(nextProps){
-      
+  componentWillMount() {    
     var component = this;
     currentUser = firebase.auth().currentUser;
-    // if(component.props.currentChatUserId !== this.state.chat_target_uid){
-    component.setState({chat_target_uname: component.props.currentChatUserName});
-    component.setState({chat_target_uid: component.props.currentChatUserId});
+    targetUser = component.props.targetChatUser;
     component.setState({messages: []})
     
-    var roomid = currentUser.uid + component.props.currentChatUserId;
+    var roomid = currentUser.uid + targetUser.uid;
     firebase.database().ref().child('reference').child(roomid)
       .once('value').then(function(snapshot){
       if(snapshot.exists()){
@@ -79,36 +71,15 @@ class Chat extends Component {
         let ref = firebase.database().ref().child('rooms');
         let newPostRef = ref.push()
         newPostRef.set({
-          'members':[currentUser.uid, component.props.currentChatUserId,
-            currentUser.uid + '_' + component.props.currentChatUserId],
+          'members':[currentUser.uid, targetUser.uid,
+            currentUser.uid + '_' + targetUser.uid],
           'messages':[]
         })
-        ref.child(newPostRef.key).on('child_added',function(data){   
-          if(data.exists()){
-            let roomId = newPostRef.key;
-            component.setState({current_room_id: roomId});
-            firebase.database().ref().child('reference').child(currentUser.uid +
-              component.props.currentChatUserId).set({
-                roomId
-            }).then(function(){
-
-            }).catch(function(error){
-
-            });
-            firebase.database().ref().child('reference').child(component.props.currentChatUserId
-              + currentUser.uid).set({
-                roomId
-            }).then(function(){
-
-            }).catch(function(error){
-
-            });
-              component.streamingMessages();
-              component.loadHistory("" + (new Date()).getTime, true)
-            }             
-          })
-        }
-      });
+       
+        component.streamingMessages();
+        component.loadHistory("" + (new Date()).getTime, true)
+      }
+    });
     // }
   }
 
@@ -194,6 +165,7 @@ class Chat extends Component {
     properties["content"] = document.getElementById('input-mess-box').value;  
     properties["uid"] = currentUser.uid;
     properties["ts"] = "" + date.getTime();
+    properties["avatarUrl"] = currentUser.photoURL;
     im.chat(properties,function(){
 
     });
@@ -213,7 +185,7 @@ class Chat extends Component {
       <div className='chat-window' id='chat-window'>
         <div className='title'>
           <div className='user-name'>
-            {this.state.chat_target_uname}
+            {targetUser.username}
           </div>
           <FontAwesome name='video-camera'/>
           <FontAwesome name='phone'/>
@@ -230,10 +202,12 @@ class Chat extends Component {
             </div>
           </div>
         </div>
-        <ChatSetting targetChatUserName={this.state.chat_target_uname}
+        <ChatSetting targetChatUserName={targetUser.username}
           currentRoomId={this.state.current_room_id}
-          targetChatUserId={this.state.chat_target_uid}
-          currentUserId={currentUser.uid}/>
+          targetChatUserId={targetUser.uid}
+          currentUserId={currentUser.uid}
+          currentUser={currentUser}
+          targetChatUser={targetUser}/>
       </div>
     )
   }

@@ -8,6 +8,7 @@ import '../../assets/styles/common/main.css';
 
 let translate = require('counterpart');
 var firebase = require('firebase');
+const $ = require('jquery');
 
 class UserLogin extends Component {
   constructor(props) {
@@ -25,7 +26,30 @@ class UserLogin extends Component {
   }
 
   componentDidMount(){
-    
+    $('#button-login-with-facebook').on('click', event =>{
+      console.log('facebook');
+      var provider = new firebase.auth.FacebookAuthProvider();
+      firebase.auth().signInWithPopup(provider).then(function(result) {
+        // This gives you a Facebook Access Token. You can use it to access the Facebook API.
+        var token = result.credential.accessToken;
+        // The signed-in user info.
+        var user = result.user;
+        console.log(token);
+        console.log(user);
+        window.location = constant.BASE_URL+ '/chat/'+user.displayName;
+        return
+        // ...
+      }).catch(function(error) {
+        // Handle Errors here.
+        var errorCode = error.code;
+        var errorMessage = error.message;
+        // The email of the user's account used.
+        var email = error.email;
+        // The firebase.auth.AuthCredential type that was used.
+        var credential = error.credential;
+        // ...
+      });    
+    })
   }
   
   showAlert = (text) => {
@@ -73,6 +97,21 @@ class UserLogin extends Component {
             <img src={constant.logoPic} className='user-avatar' alt=''/>
             <h1>{translate('app.identifier.app_name')} <small>
               {translate('app.identifier.slogan')}</small></h1>
+            <button className='btn btn-white btn-outline btn-lg btn-rounded' id='button-login-with-facebook'>
+              Facebook
+            </button>
+            <button className='btn btn-white btn-outline btn-lg btn-rounded' id='button-login-with-google'>
+              Google
+            </button>
+            <button className='btn btn-white btn-outline btn-lg btn-rounded'>
+              Twitter
+            </button>
+            <button className='btn btn-white btn-outline btn-lg btn-rounded'>
+              Github
+            </button>
+            <button className='btn btn-white btn-outline btn-lg btn-rounded'>
+              Phone
+            </button>
             <form onSubmit={this.handleSubmit.bind(this)}
               className='ng-pristine ng-valid'>
               <div className='form-content'>
@@ -102,6 +141,7 @@ class UserLogin extends Component {
               <button type='submit' className='btn btn-white btn-outline btn-lg btn-rounded'>
                 {translate('app.login.submit')}
               </button>
+            
             </form>
           </div>
         </div>

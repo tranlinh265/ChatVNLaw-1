@@ -42,7 +42,8 @@ module.exports = {
             ref.push().set({
                 "text": properties.content,
                 "sender_uid": properties.uid,
-                "msg_ts": properties.ts
+                "msg_ts": properties.ts,
+                "avatarUrl": properties.avatarUrl
             })
             return callback();
         }     

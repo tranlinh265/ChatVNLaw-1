@@ -68,85 +68,25 @@ class UserSignUp extends Component {
       component.showAlert(error.message);
     })
     .then(function(user){
-      if(user){
-        firebase.database().ref('users').orderByChild('username').equalTo(username).once('value').then(function(result) {
-          if(result.exists()){
-            component.showAlert('exist username');
+      if(user){             
+        user.updateProfile({
+          displayName: username,
+          photoURL: constant.DEFAULT_AVATAR_URL
+        }).then(function() {
+          
+          firebase.database().ref().child('users').child(user.uid).update({
+            "username" : username
+          }).then(function(){
+              window.location = constant.BASE_URL+'/chat/'+user.displayName;
+          }).catch(function(error){
+            component.showAlert(error.message);
             user.delete().then(function() {
               // User deleted.
             }).catch(function(error) {
               // An error happened.
             });
-          }else{            
-            user.updateProfile({
-              displayName: username,
-              photoURL: constant.DEFAULT_AVATAR_URL
-            }).then(function() {
-              // Update successful.
-              var success = 0;
-              
-              firebase.database().ref().child('users').child(user.uid).update({
-                "username" : username
-              }).then(function(){
-                success = success + 1;
-                if(success === 2){
-                  window.location = constant.BASE_URL+'/chat/'+user.displayName;
-                }
-              }).catch(function(error){
-                component.showAlert(error.message);
-                user.delete().then(function() {
-                  // User deleted.
-                }).catch(function(error) {
-                  // An error happened.
-                });
-                return;              
-              })
-  
-              let ref = firebase.database().ref().child('rooms');
-              let newPostRef = ref.push()
-              newPostRef.set({
-                "members":[user.uid,user.uid,user.uid+'_'+user.uid],
-                "messages":[]
-              }).catch(function(error){
-                component.showAlert(error.message);
-                user.delete().then(function() {
-                  // User deleted.
-                }).catch(function(error) {
-                  // An error happened.
-                });
-                return;
-              })
-              ref.child(newPostRef.key).on('child_added',function(snapshot){
-                if(snapshot.exists()){
-                  var roomId = newPostRef.key;
-                  firebase.database().ref().child('reference').child(user.uid + user.uid).set({
-                    roomId
-                  }).then(function(){
-                    success = success + 1;
-                    if(success === 2){
-                      window.location = constant.BASE_URL+'/chat/'+user.displayName;
-                    }
-                  }).catch(function(error){
-                    component.showAlert(error.message);
-                    user.delete().then(function() {
-                      // User deleted.
-                    }).catch(function(error) {
-                      // An error happened.
-                    });
-                    return; 
-                  })
-                }
-              })
-            }).catch(function(error) {
-              // An error happened.
-              component.showAlert(error.message);
-              user.delete().then(function() {
-                // User deleted.
-              }).catch(function(error) {
-                // An error happened.
-              });
-            }); 
-          }
+            return;              
+          })
         })
       }
     })
