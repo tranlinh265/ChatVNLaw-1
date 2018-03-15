@@ -24,6 +24,7 @@ import PaymentProcess from'./components/payments/paymentProcess';
 
 import TestPayment from './components/payments/test'
 import NotFoundPage from './components/shared/notfound';
+import DemoWebRtc from './components/demowebrtc';
 
 const Routes = props => (
   <Router {...props}>
@@ -46,6 +47,7 @@ const Routes = props => (
       <Route path='/test' component={TestPayment}/>
       <Route path='/articles/:id' component={Article}/>
       <Route path='/payment_process' component={PaymentProcess}/>
+      <Route path='/demo_web_rtc' component={DemoWebRtc}/>
       <Route exact path='/' render={() => (
         <Redirect to='/home'/>  
       )}/>
