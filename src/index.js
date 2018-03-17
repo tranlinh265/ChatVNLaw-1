@@ -39,13 +39,10 @@ $(window).on("blur focus", function (e) {
         if(!!firebase.auth().currentUser){
           firebase.database().ref(`users/${firebase.auth().currentUser.uid}`).update({status: 'away'});
         }
-        console.log(firebase.auth().currentUser);
-
         break;
       case "focus":
         // $('div').text("Focused");
         localStorage.setItem('isFocused', true);  
-        console.log(firebase.auth().currentUser);
         if (!!firebase.auth().currentUser) {
           firebase.database().ref(`users/${firebase.auth().currentUser.uid}`).update({ status: 'online' });
         }

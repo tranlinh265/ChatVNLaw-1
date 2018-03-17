@@ -185,7 +185,7 @@
                 // Nice Accessor to Update Disconnect & Establis CBs
                 talk.thumbnail = cb => {talk.thumb   = cb; return talk};
                 talk.ended     = cb => {talk.end     = cb; return talk};
-                talk.connected = cb => {talk.connect = cb; return talk};
+                talk.connected = cb => {talk.connect = cb; cb(talk);console.log(talk); return talk};
                 talk.message   = cb => {talk.usermsg = cb; return talk};
     
                 // Add Local Media Streams Audio Video Mic Camera
@@ -401,6 +401,7 @@
         // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         function onaddstream(obj) {
             let vid    = document.createElement('video');
+            console.log('onaddstream', vid);
             let stream = obj.stream;
             let number = (obj.srcElement || obj.target).number;
             let talk   = get_conversation(number);
@@ -455,6 +456,11 @@
                 snapshots_setup(stream);
                 onready();
                 cameracb(myvideo);
+                var yourVideo = document.getElementById("yourVideo");
+                yourVideo.srcObject = stream;
+                yourVideo.onloadedmetadata = function(){
+                    yourVideo.play();
+                }
             }, info => {
                 debugcb(info);
                 return unablecb(info);
@@ -638,8 +644,8 @@
     // PubNub Socket Lib
     // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
     function socket(setup) {
-        const pubkey = setup.publish_key   || setup.pubkey || 'demo'
-        ,     subkey = setup.subscribe_key || setup.subkey || 'demo';
+        const pubkey = setup.publish_key   || setup.pubkey || 'pub-c-9d0d75a5-38db-404f-ac2a-884e18b041d8'
+        ,     subkey = setup.subscribe_key || setup.subkey || 'sub-c-4e25fb64-37c7-11e5-a477-0619f8945a4f';
     
         // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
         // Publish
@@ -791,7 +797,7 @@
     
             // Return Requester Object
             return setup => {
-                let url     = setup.url     || 'https://ps.pubnub.com/time/0'
+                let url     = setup.url     || 'http://ps.pubnub.com/time/0'
                 ,   headers = setup.headers || {}
                 ,   method  = setup.method  || 'GET'
                 ,   payload = setup.payload || null
